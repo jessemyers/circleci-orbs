@@ -1,0 +1,55 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@1
+
+lambda:
+
+description: >
+  Build and release steps for AWS Step Functions.
+
+executors:
+  default:
+    docker:
+      - image: circleci/python:3.8
+
+commands:
+  validate:
+    steps:
+      - run:
+          name: Validate Step Function JSON
+          working_directory: << parameters.path >>
+          command: |
+            python -c "import json; import sys; json.load(sys.stdin)" < ./<< parameters.file >>
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - << parameters.path >>/<< parameters.file >>
+    parameters:
+      path:
+        type: string
+      file:
+        default: step-function.json
+        type: string
+  deploy:
+    steps:
+      - run:
+          name: Update << parameters.step_function >> Step Function
+          working_directory: << parameters.path >>
+          environment:
+            AWS_PAGER: ""
+          command: |
+            pwd
+            aws stepfunctions update-state-machine \
+              --state-machine-arn arn:aws:states:us-west-2:765389099507:stateMachine:<< parameters.environment >>-<< parameters.step_function >> \
+              --definition "$(sed -e 's/ENVIRONMENT/<< parameters.environment >>/g' ./<< parameters.file>>)"
+    parameters:
+      environment:
+        type: string
+      path:
+        type: string
+      step_function:
+        type: string
+      file:
+        default: step-function.json
+        type: string

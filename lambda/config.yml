@@ -6,7 +6,7 @@ orbs:
 lambda:
 
 description: >
-  Build and release steps for Lambda functions
+  Build and release steps for AWS Lambda functions
 
 executors:
   default:

@@ -1,0 +1,72 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@1
+
+lambda:
+
+description: >
+  Build and release steps for Lambda functions
+
+executors:
+  default:
+    docker:
+      - image: circleci/python:3.8
+
+commands:
+  build:
+    steps:
+      - run:
+          name: Build << parameters.lambda >> Deployment Package
+          command: |
+            cd << parameters.path >>
+            zip << parameters.lambda >>.zip << parameters.files >>
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - << parameters.path >>/<< parameters.lambda >>.zip
+    parameters:
+      lambda:
+        type: string
+      files:
+        type: string
+      path:
+        default: .
+        type: string
+  deploy:
+    steps:
+      - run:
+          name: Upload << parameters.lambda >> Deployment Package
+          working_directory: << parameters.path >>
+          command: |
+            aws s3 cp << parameters.lambda >>.zip s3://<< parameters.bucket >>/functions/<< parameters.environment >>/<< parameters.lambda >>.zip
+      - run:
+          name: Upload << parameters.lambda >> Function Code
+          environment:
+            AWS_PAGER: ""
+          command: |
+            aws lambda update-function-code \
+              --function-name << parameters.environment >>-<< parameters.lambda >> \
+              --s3-bucket << parameters.bucket >> \
+              --s3-key functions/<< parameters.environment >>/<< parameters.lambda >>.zip
+      - run:
+          name: Upload << parameters.lambda >> Function Configuration
+          environment:
+            AWS_PAGER: ""
+          command: |
+            aws lambda update-function-configuration \
+              --function-name << parameters.environment >>-<< parameters.lambda >> \
+              --handler << parameters.handler >>
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      handler:
+        default: function.handle
+        type: string
+      lambda:
+        type: string
+      path:
+        default: .
+        type: string

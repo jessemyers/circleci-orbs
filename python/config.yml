@@ -1,0 +1,46 @@
+version: 2.1
+
+lambda:
+
+description: >
+  Build and release steps for Python projects
+
+executors:
+  default:
+    docker:
+      - image: circleci/python:3.8
+
+commands:
+  restore-requirements-cache:
+    steps:
+      - restore_cache:
+          name: Restore Requirements Cache
+          keys:
+            - deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
+  save-requirements-cache:
+    steps:
+      - save_cache:
+          name: Save Requirements Cache
+          key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - ~/.cache/requirements
+  install-requirements:
+    steps:
+      - run:
+          name: Install Dependencies
+          command: pip install -r requirements.txt
+  lint:
+    steps:
+      - run:
+          name: Run flake8
+          command: flake8
+  test:
+    steps:
+      - run:
+          name: Run nosetests
+          command: nosetests
+  typehinting:
+    steps:
+      - run:
+          name: Run mypy
+          command: mypy ./

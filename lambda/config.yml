@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   aws-cli: circleci/aws-cli@2.0.0
+  python: polycosm/python@2.0.0
 
 description: >
   Build and release steps for AWS Lambda functions.
@@ -62,3 +63,59 @@ commands:
             aws lambda update-function-configuration \
               --function-name << parameters.environment >>-<< parameters.lambda >> \
               --handler << parameters.handler >>
+
+
+jobs:
+  build:
+    parameters:
+      executor:
+        type: executor
+        default: default
+      lambda:
+        type: string
+      path:
+        default: .
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - checkout
+      - python/install-dependencies
+      - python/lint
+      - python/typehinting
+      - python/test
+      - build-lambda:
+          lambda: << parameters.lambda >>
+          path: << parameters.path >>
+      - python/update-dependencies-cache
+
+  deploy:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      executor:
+        type: executor
+        default: default
+      handler:
+        default: function.handler
+        type: string
+      lambda:
+        type: string
+      path:
+        default: .
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - python/restore-dependencies-cache
+      - aws-cli/install
+      - deploy-lambda:
+          bucket: << parameters.bucket >>
+          environment: << parameters.environment >>
+          handler: << parameters.handler >>
+          lambda: << parameters.lambda >>
+          path: << parameters.path >>

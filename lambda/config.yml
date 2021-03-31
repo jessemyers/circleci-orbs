@@ -1,39 +1,44 @@
 version: 2.1
 
 orbs:
-  aws-cli: circleci/aws-cli@1
-
-lambda:
+  aws-cli: circleci/aws-cli@2.0.0
 
 description: >
-  Build and release steps for AWS Lambda functions
+  Build and release steps for AWS Lambda functions.
 
 executors:
   default:
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.9.2
 
 commands:
-  build:
-    steps:
-      - run:
-          name: Build << parameters.lambda >> Deployment Package
-          command: |
-            cd << parameters.path >>
-            zip << parameters.lambda >>.zip << parameters.files >>
-      - persist_to_workspace:
-          root: ~/repo
-          paths:
-            - << parameters.path >>/<< parameters.lambda >>.zip
+  build-lambda:
     parameters:
       lambda:
-        type: string
-      files:
         type: string
       path:
         default: .
         type: string
-  deploy:
+    steps:
+      - run:
+          name: Build << parameters.lambda >> Deployment Package
+          working_directory: << parameters.path >>
+          command: |
+            zip << parameters.lambda >>.zip $(find . -name "*.py" ! -name "setup.py" ! -path "*/tests/*" ! -path "*/cli/*")
+
+  deploy-lambda:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      handler:
+        type: string
+      lambda:
+        type: string
+      path:
+        default: .
+        type: string
     steps:
       - run:
           name: Upload << parameters.lambda >> Deployment Package
@@ -57,16 +62,3 @@ commands:
             aws lambda update-function-configuration \
               --function-name << parameters.environment >>-<< parameters.lambda >> \
               --handler << parameters.handler >>
-    parameters:
-      bucket:
-        type: string
-      environment:
-        type: string
-      handler:
-        default: function.handle
-        type: string
-      lambda:
-        type: string
-      path:
-        default: .
-        type: string

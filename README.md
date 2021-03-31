@@ -1,3 +1,3 @@
-# circleci-orb
+# circleci-orbs
 
-CircleCI Orbs
+CircleCI Orbs.

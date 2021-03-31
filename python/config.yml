@@ -1,46 +1,65 @@
 version: 2.1
 
-lambda:
-
 description: >
-  Build and release steps for Python projects
+  Build and release steps for Python projects.
 
 executors:
   default:
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.9.2
 
 commands:
-  restore-requirements-cache:
-    steps:
-      - restore_cache:
-          name: Restore Requirements Cache
-          keys:
-            - deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
-  save-requirements-cache:
-    steps:
-      - save_cache:
-          name: Save Requirements Cache
-          key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
-          paths:
-            - ~/.cache/requirements
-  install-requirements:
+  install-dependencies:
     steps:
       - run:
           name: Install Dependencies
-          command: pip install -r requirements.txt
+          command: |
+            pip install .[lint,test,typehinting]
   lint:
     steps:
       - run:
           name: Run flake8
-          command: flake8
+          command: |
+            flake8
   test:
     steps:
       - run:
           name: Run nosetests
-          command: nosetests
+          command: |
+            nosetests
   typehinting:
     steps:
       - run:
           name: Run mypy
-          command: mypy ./
+          command: |
+            mypy ./
+
+  restore-dependencies-cache:
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+
+  update-dependencies-cache:
+    steps:
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - .pyenv
+            - project
+
+jobs:
+  build:
+    parameters:
+      executor:
+        type: executor
+        default: default
+
+    executor: << parameters.executor >>
+
+    steps:
+      - checkout
+      - install-dependencies
+      - lint
+      - typehinting
+      - test
+      - update-dependencies-cache

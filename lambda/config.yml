@@ -40,6 +40,8 @@ commands:
       path:
         default: .
         type: string
+      region:
+        type: string
     steps:
       - run:
           name: Upload << parameters.lambda >> Deployment Package
@@ -47,21 +49,23 @@ commands:
           command: |
             aws s3 cp << parameters.lambda >>.zip s3://<< parameters.bucket >>/functions/<< parameters.environment >>/<< parameters.lambda >>.zip
       - run:
-          name: Upload << parameters.lambda >> Function Code
+          name: Upload << parameters.environment >>-<< parameters.region >>-<< parameters.lambda >> Function Code
           environment:
             AWS_PAGER: ""
           command: |
-            aws lambda update-function-code \
-              --function-name << parameters.environment >>-<< parameters.lambda >> \
+            aws --region << parameters.region >> \
+              lambda update-function-code \
+              --function-name << parameters.environment >>-<< parameters.region >>-<< parameters.lambda >> \
               --s3-bucket << parameters.bucket >> \
               --s3-key functions/<< parameters.environment >>/<< parameters.lambda >>.zip
       - run:
-          name: Upload << parameters.lambda >> Function Configuration
+          name: Update << parameters.environment >>-<< parameters.region >>-<< parameters.lambda >> Function Configuration
           environment:
             AWS_PAGER: ""
           command: |
-            aws lambda update-function-configuration \
-              --function-name << parameters.environment >>-<< parameters.lambda >> \
+            aws --region << parameters.region >> \
+              lambda update-function-configuration \
+              --function-name << parameters.environment >>-<< parameters.region >>-<< parameters.lambda >> \
               --handler << parameters.handler >>
 
 
@@ -107,6 +111,8 @@ jobs:
       path:
         default: .
         type: string
+      region:
+        type: string
 
     executor: << parameters.executor >>
 
@@ -119,3 +125,4 @@ jobs:
           handler: << parameters.handler >>
           lambda: << parameters.lambda >>
           path: << parameters.path >>
+          region: << parameters.region >>

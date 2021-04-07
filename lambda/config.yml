@@ -27,6 +27,28 @@ commands:
           command: |
             zip << parameters.lambda >>.zip $(find . -name "*.py" ! -name "setup.py" ! -path "*/tests/*" ! -path "*/cli/*")
 
+  upload-lambda:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      lambda:
+        type: string
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+    steps:
+      - run:
+          name: Upload << parameters.lambda >> Deployment Package
+          working_directory: << parameters.path >>
+          command: |
+            aws --region <<parameters.region >> \
+              s3 cp \
+              << parameters.lambda >>.zip s3://<< parameters.bucket >>/functions/<< parameters.environment >>/<< parameters.lambda >>.zip
+
   deploy-lambda:
     parameters:
       bucket:
@@ -43,11 +65,6 @@ commands:
       region:
         type: string
     steps:
-      - run:
-          name: Upload << parameters.lambda >> Deployment Package
-          working_directory: << parameters.path >>
-          command: |
-            aws s3 cp << parameters.lambda >>.zip s3://<< parameters.bucket >>/functions/<< parameters.environment >>/<< parameters.lambda >>.zip
       - run:
           name: Upload << parameters.environment >>-<< parameters.region >>-<< parameters.lambda >> Function Code
           environment:
@@ -93,6 +110,35 @@ jobs:
           lambda: << parameters.lambda >>
           path: << parameters.path >>
       - python/update-dependencies-cache
+
+  upload:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      executor:
+        type: executor
+        default: default
+      lambda:
+        type: string
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - python/restore-dependencies-cache
+      - aws-cli/install
+      - upload-lambda:
+          bucket: << parameters.bucket >>
+          environment: << parameters.environment >>
+          lambda: << parameters.lambda >>
+          path: << parameters.path >>
+          region: << parameters.region >>
 
   deploy:
     parameters:

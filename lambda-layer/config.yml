@@ -20,33 +20,7 @@ commands:
       path:
         default: .
         type: string
-      requirements:
-        default: ''
-        type: string
-      wheel:
-        default: ''
-        type: string
     steps:
-      - run:
-          name: Create python directory
-          command: |
-            mkdir -p << parameters.path >>/<< parameters.layer >>/python
-      - run:
-          name: Install requirements
-          when:
-            condition:
-              not:
-                equal: [ << parameters.requirements >>, '' ]
-          command: |
-            pip install -r << parameters.requirements >> -t << parameters.path >>/< parameters.layer >>/python
-      - run:
-          name: Install wheel
-          when:
-            condition:
-              not:
-                equal: [ << parameters.wheel >>, '' ]
-          command: |
-            pip install << parameters.wheel >> --only-binary=":all:" -t << parameters.path >>/< parameters.layer >>/python
       - run:
           name: Build << parameters.layer >> Deployment Package
           working_directory: << parameters.path >>/<< parameters.layer >>
@@ -137,11 +111,31 @@ jobs:
 
     steps:
       - checkout
+      - run:
+          name: Create python directory
+          command: |
+            mkdir -p << parameters.path >>/<< parameters.layer >>/python
+      - when:
+          condition:
+            not:
+              equal: [ << parameters.requirements >>, '' ]
+          steps:
+            - run:
+                name: Install requirements
+                command: |
+                  pip install -r << parameters.requirements >> -t << parameters.path >>/<< parameters.layer >>/python
+      - when:
+          condition:
+            not:
+              equal: [ << parameters.wheel >>, '' ]
+          steps:
+            - run:
+                name: Install wheel
+                command: |
+                  pip install << parameters.wheel >> --only-binary=":all:" -t << parameters.path >>/<< parameters.layer >>/python
       - build-layer:
           layer: << parameters.layer >>
           path: << parameters.path >>
-          requirements: << parameters.requirements >>
-          wheel: << parameters.wheel >>
       - cache-layer:
           layer: << parameters.layer >>
           path: << parameters.path >>

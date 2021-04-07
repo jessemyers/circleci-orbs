@@ -36,7 +36,7 @@ commands:
         type: string
     steps:
       - persist_to_workspace:
-          root: << parameters.path >>
+          root: << parameters.path >>/<< parameters.layer >>
           paths:
             - << parameters.layer >>.zip
 

@@ -56,7 +56,7 @@ commands:
     steps:
       - run:
           name: Upload << parameters.layer >> Deployment Package
-          working_directory: << parameters.path >>
+          working_directory: << parameters.path >>/<< parameters.layer >>
           command: |
             aws --region <<parameters.region >> \
               s3 cp \

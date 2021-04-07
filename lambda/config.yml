@@ -36,7 +36,7 @@ commands:
         type: string
     steps:
       - persist_to_workspace:
-          root: /home/circleci
+          root: << parameters.path >>
           paths:
             - << parameters.lambda >>.zip
 

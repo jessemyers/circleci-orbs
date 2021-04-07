@@ -27,6 +27,19 @@ commands:
           command: |
             zip << parameters.lambda >>.zip $(find . -name "*.py" ! -name "setup.py" ! -path "*/tests/*" ! -path "*/cli/*")
 
+  cache-lambda:
+    parameters:
+      lambda:
+        type: string
+      path:
+        default: .
+        type: string
+    steps:
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - << parameters.lambda >>.zip
+
   upload-lambda:
     parameters:
       bucket:
@@ -107,6 +120,9 @@ jobs:
       - python/typehinting
       - python/test
       - build-lambda:
+          lambda: << parameters.lambda >>
+          path: << parameters.path >>
+      - cache-lambda:
           lambda: << parameters.lambda >>
           path: << parameters.path >>
       - python/update-dependencies-cache

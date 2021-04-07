@@ -1,0 +1,179 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@2.0.0
+  python: polycosm/python@2.0.0
+
+description: >
+  Build and release steps for AWS Lambda layers.
+
+executors:
+  default:
+    docker:
+      - image: cimg/python:3.9.2
+
+commands:
+  build-layer:
+    parameters:
+      layer:
+        type: string
+      path:
+        default: .
+        type: string
+    steps:
+      - run:
+          name: Build << parameters.layer >> Deployment Package
+          working_directory: << parameters.path >>
+          command: |
+            zip << parameters.layer >>.zip $(find . -name "*.py" ! -name "setup.py" ! -path "*/tests/*" ! -path "*/cli/*")
+
+  cache-layer:
+    parameters:
+      layer:
+        type: string
+      path:
+        default: .
+        type: string
+    steps:
+      - persist_to_workspace:
+          root: << parameters.path >>
+          paths:
+            - << parameters.layer >>.zip
+
+  upload-layer:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      layer:
+        type: string
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+    steps:
+      - run:
+          name: Upload << parameters.layer >> Deployment Package
+          working_directory: << parameters.path >>
+          command: |
+            aws --region <<parameters.region >> \
+              s3 cp \
+              << parameters.layer >>.zip s3://<< parameters.bucket >>/layers/<< parameters.environment >>/<< parameters.layer >>.zip
+
+  deploy-layer:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      layer:
+        type: string
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+      runtimes:
+        type: string
+    steps:
+      - run:
+          name: Upload << parameters.environment >>-<< parameters.region >>-<< parameters.layer >> Layer Code
+          environment:
+            AWS_PAGER: ""
+          command: |
+            aws --region << parameters.region >> \
+              lambda publish-layer-version \
+              --layer-name << parameters.environment >>-<< parameters.region >>-<< parameters.layer >> \
+              --content S3Bucket=<< parameters.bucket >>,S3Key=layers/<< parameters.environment >>/<< parameters.layer >>.zip \
+              --compatible-runtimes << parameters.runtimes >>
+
+jobs:
+  build:
+    parameters:
+      executor:
+        type: executor
+        default: default
+      layer:
+        type: string
+      path:
+        default: .
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - checkout
+      - python/install-dependencies
+      - python/lint
+      - python/typehinting
+      - python/test
+      - build-layer:
+          layer: << parameters.layer >>
+          path: << parameters.path >>
+      - cache-layer:
+          layer: << parameters.layer >>
+          path: << parameters.path >>
+      - python/update-dependencies-cache
+
+  upload:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      executor:
+        type: executor
+        default: default
+      layer:
+        type: string
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - python/restore-dependencies-cache
+      - aws-cli/install
+      - upload-layer:
+          bucket: << parameters.bucket >>
+          environment: << parameters.environment >>
+          layer: << parameters.layer >>
+          path: << parameters.path >>
+          region: << parameters.region >>
+
+  deploy:
+    parameters:
+      bucket:
+        type: string
+      environment:
+        type: string
+      executor:
+        type: executor
+        default: default
+      layer:
+        type: string
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+      runtimes:
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - python/restore-dependencies-cache
+      - aws-cli/install
+      - deploy-layer:
+          bucket: << parameters.bucket >>
+          environment: << parameters.environment >>
+          layer: << parameters.layer >>
+          path: << parameters.path >>
+          region: << parameters.region >>
+          runtimes: << parameters.runtimes >>

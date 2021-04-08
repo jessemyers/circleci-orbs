@@ -25,7 +25,7 @@ commands:
           name: Build << parameters.layer >> Deployment Package
           working_directory: << parameters.path >>/<< parameters.layer >>
           command: |
-            zip << parameters.layer >>.zip $(find . -path "python*")
+            zip << parameters.layer >>.zip $(find . -path "./python*")
 
   cache-layer:
     parameters:

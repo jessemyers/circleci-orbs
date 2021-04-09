@@ -28,10 +28,31 @@ commands:
           working_directory: << parameters.path >>
           command: |
             python -c "import json; import sys; json.load(sys.stdin)" < ./<< parameters.file >>
+  update-step-function-cache:
+    parameters:
+      file:
+        default: step-function.json
+        type: string
+      path:
+        default: .
+        type: string
+    steps:
       - persist_to_workspace:
-          root: ~/repo
+          root: /home/circleci
           paths:
-            - << parameters.path >>/<< parameters.file >>
+            - project
+  restore-step-function-cache:
+    parameters:
+      file:
+        default: step-function.json
+        type: string
+      path:
+        default: .
+        type: string
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+
   deploy:
     parameters:
       account_id:
@@ -58,6 +79,8 @@ commands:
           environment:
             AWS_PAGER: ""
           command: |
+            pwd
+            ls
             aws --region << parameters.region >> \
               stepfunctions update-state-machine \
               --state-machine-arn arn:aws:states:<< parameters.region >>:<< parameters.account_id >>:stateMachine:<< parameters.environment >>-<< parameters.step_function >> \
@@ -79,7 +102,11 @@ jobs:
     executor: << parameters.executor >>
 
     steps:
+      - checkout
       - validate:
+          file: << parameters.file >>
+          path: << parameters.path >>
+      - update-step-function-cache:
           file: << parameters.file >>
           path: << parameters.path >>
 
@@ -106,6 +133,10 @@ jobs:
     executor: << parameters.executor >>
 
     steps:
+      - restore-step-function-cache:
+          file: << parameters.file >>
+          path: << parameters.path >>
+      - aws-cli/install
       - deploy:
           account_id: << parameters.account_id >>
           environment: << parameters.environment >>

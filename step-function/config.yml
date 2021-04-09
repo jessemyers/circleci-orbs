@@ -16,11 +16,11 @@ executors:
 commands:
   validate:
     parameters:
-      path:
-        default: .
-        type: string
       file:
         default: step-function.json
+        type: string
+      path:
+        default: .
         type: string
     steps:
       - run:
@@ -38,6 +38,9 @@ commands:
         type: string
       environment:
         type: string
+      executor:
+        type: executor
+        default: default
       file:
         default: step-function.json
         type: string
@@ -59,3 +62,54 @@ commands:
               stepfunctions update-state-machine \
               --state-machine-arn arn:aws:states:<< parameters.region >>:<< parameters.account_id >>:stateMachine:<< parameters.environment >>-<< parameters.step_function >> \
               --definition "$(sed -e 's/ENVIRONMENT/<< parameters.environment >>/g' -e 's/REGION/<< parameters.region >>/g' ./<< parameters.file>>)"
+
+jobs:
+  build:
+    parameters:
+      executor:
+        type: executor
+        default: default
+      file:
+        default: step-function.json
+        type: string
+      path:
+        default: .
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - validate:
+          file: << parameters.file >>
+          path: << parameters.path >>
+
+  deploy:
+    parameters:
+      account_id:
+        type: string
+      environment:
+        type: string
+      executor:
+        type: executor
+        default: default
+      file:
+        default: step-function.json
+        type: string
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+      step_function:
+        type: string
+
+    executor: << parameters.executor >>
+
+    steps:
+      - deploy:
+          account_id: << parameters.account_id >>
+          environment: << parameters.environment >>
+          file: << parameters.file >>
+          path: << parameters.path >>
+          region: << parameters.region >>
+          step_function: << parameters.step_function >>

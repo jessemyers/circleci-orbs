@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  aws-cli: circleci/aws-cli@1
+  aws-cli: circleci/aws-cli@2.0.0
 
 lambda:
 
@@ -11,10 +11,17 @@ description: >
 executors:
   default:
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.9.2
 
 commands:
   validate:
+    parameters:
+      path:
+        default: .
+        type: string
+      file:
+        default: step-function.json
+        type: string
     steps:
       - run:
           name: Validate Step Function JSON
@@ -25,13 +32,22 @@ commands:
           root: ~/repo
           paths:
             - << parameters.path >>/<< parameters.file >>
+  deploy:
     parameters:
-      path:
+      account_id:
+        type: string
+      environment:
         type: string
       file:
         default: step-function.json
         type: string
-  deploy:
+      path:
+        default: .
+        type: string
+      region:
+        type: string
+      step_function:
+        type: string
     steps:
       - run:
           name: Update << parameters.step_function >> Step Function
@@ -39,17 +55,7 @@ commands:
           environment:
             AWS_PAGER: ""
           command: |
-            pwd
-            aws stepfunctions update-state-machine \
-              --state-machine-arn arn:aws:states:us-west-2:765389099507:stateMachine:<< parameters.environment >>-<< parameters.step_function >> \
-              --definition "$(sed -e 's/ENVIRONMENT/<< parameters.environment >>/g' ./<< parameters.file>>)"
-    parameters:
-      environment:
-        type: string
-      path:
-        type: string
-      step_function:
-        type: string
-      file:
-        default: step-function.json
-        type: string
+            aws --region << parameters.region >> \
+              stepfunctions update-state-machine \
+              --state-machine-arn arn:aws:states:<< parameters.region >>:<< parameters.account_id >>:stateMachine:<< parameters.environment >>-<< parameters.step_function >> \
+              --definition "$(sed -e 's/ENVIRONMENT/<< parameters.environment >>/g' -e 's/REGION/<< parameters.region >>/g' ./<< parameters.file>>)"

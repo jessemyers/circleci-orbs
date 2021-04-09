@@ -84,7 +84,7 @@ commands:
             aws --region << parameters.region >> \
               stepfunctions update-state-machine \
               --state-machine-arn arn:aws:states:<< parameters.region >>:<< parameters.account_id >>:stateMachine:<< parameters.environment >>-<< parameters.step_function >> \
-              --definition "$(sed -e 's/ENVIRONMENT/<< parameters.environment >>/g' -e 's/REGION/<< parameters.region >>/g' ./<< parameters.file>>)"
+              --definition "$(sed -e 's/ACCOUNT/<< parameters.account_id >>/g' 's/ENVIRONMENT/<< parameters.environment >>/g' -e 's/REGION/<< parameters.region >>/g' ./<< parameters.file>>)"
 
 jobs:
   build:

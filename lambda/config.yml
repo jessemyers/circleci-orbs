@@ -20,12 +20,15 @@ commands:
       path:
         default: .
         type: string
+      source:
+        default: .
+        type: string
     steps:
       - run:
           name: Build << parameters.lambda >> Deployment Package
           working_directory: << parameters.path >>
           command: |
-            zip << parameters.lambda >>.zip $(find . -name "*.py" ! -name "setup.py" ! -path "*/tests/*" ! -path "*/cli/*")
+            zip << parameters.lambda >>.zip $(find << parameters.source >> -name "*.py" ! -name "setup.py" ! -path "*/tests/*" ! -path "*/cli/*")
 
   cache-lambda:
     parameters:

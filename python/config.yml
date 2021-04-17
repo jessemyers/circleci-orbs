@@ -10,29 +10,59 @@ executors:
 
 commands:
   install-dependencies:
+    parameters:
+      path:
+        default: .
+        type: string
     steps:
       - run:
           name: Install Dependencies
+          working_directory: << parameters.path >>
           command: |
             pip install .[lint,test,typehinting]
   lint:
+    parameters:
+      path:
+        default: .
+        type: string
+      source:
+        default: .
+        type: string
     steps:
       - run:
           name: Run flake8
+          working_directory: << parameters.path >>
           command: |
-            flake8
+            flake8 << parameters.source >>
   test:
+    parameters:
+      path:
+        default: .
+        type: string
+      source:
+        default: .
+        type: string
     steps:
       - run:
           name: Run nosetests
+          working_directory: << parameters.path >>
           command: |
-            nosetests
+            nosetests << parameters.source >>
+
   typehinting:
+    parameters:
+      path:
+        default: .
+        type: string
+      source:
+        default: .
+        type: string
     steps:
       - run:
           name: Run mypy
+          working_directory: << parameters.path >>
           command: |
-            mypy ./
+            mypy << parameters.source >>
 
   restore-dependencies-cache:
     steps:
@@ -53,13 +83,26 @@ jobs:
       executor:
         type: executor
         default: default
+      path:
+        default: .
+        type: string
+      source:
+        default: .
+        type: string
 
     executor: << parameters.executor >>
 
     steps:
       - checkout
-      - install-dependencies
-      - lint
-      - typehinting
-      - test
+      - install-dependencies:
+          path: << parameters.path >>
+      - lint:
+          path: << parameters.path >>
+          source: << parameters.source >>
+      - typehinting:
+          path: << parameters.path >>
+          source: << parameters.source >>
+      - test:
+          path: << parameters.path >>
+          source: << parameters.source >>
       - update-dependencies-cache

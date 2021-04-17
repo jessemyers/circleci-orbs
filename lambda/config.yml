@@ -121,10 +121,17 @@ jobs:
 
     steps:
       - checkout
-      - python/install-dependencies
-      - python/lint
-      - python/typehinting
-      - python/test
+      - python/install-dependencies:
+          path: << parameters.path >>
+      - python/lint:
+          path: << parameters.path >>
+          source: << parameters.source >>
+      - python/typehinting:
+          path: << parameters.path >>
+          source: << parameters.source >>
+      - python/test:
+          path: << parameters.path >>
+          source: << parameters.source >>
       - build-lambda:
           lambda: << parameters.lambda >>
           path: << parameters.path >>

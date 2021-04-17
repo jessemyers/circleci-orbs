@@ -113,6 +113,9 @@ jobs:
       path:
         default: .
         type: string
+      source:
+        default: .
+        type: string
 
     executor: << parameters.executor >>
 
@@ -125,6 +128,7 @@ jobs:
       - build-lambda:
           lambda: << parameters.lambda >>
           path: << parameters.path >>
+          source: << parameters.source >>
       - cache-lambda:
           lambda: << parameters.lambda >>
           path: << parameters.path >>

@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   aws-cli: circleci/aws-cli@2.0.0
-  python: polycosm/python@2.0.0
+  python: polycosm/python@2.1.0
 
 description: >
   Build and release steps for AWS Lambda functions.

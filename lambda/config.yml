@@ -108,6 +108,9 @@ jobs:
       executor:
         type: executor
         default: default
+      extra_files:
+        default: ""
+        type: string
       lambda:
         type: string
       path:
@@ -136,6 +139,16 @@ jobs:
           lambda: << parameters.lambda >>
           path: << parameters.path >>
           source: << parameters.source >>
+      - when:
+          condition:
+            not:
+              equal: [ << parameters.extra_files >>, "" ]
+          steps:
+            - run:
+                name: Add extract files to << parameters.lambda >> Deployment Package
+                working_directory: << parameters.path >>
+                command: |
+                  zip << parameters.lambda >>.zip << parameters.extra_files >>
       - cache-lambda:
           lambda: << parameters.lambda >>
           path: << parameters.path >>
